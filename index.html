@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opposite Bubble App</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #a8edea, #fed6e3);
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(255, 255, 255, 0.6);
+      padding: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: bold;
+      z-index: 10;
+    }
+
+    #selectedBar {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag {
+      background: rgba(0, 150, 200, 0.15);
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .reset-btn {
+      cursor: pointer;
+      background: #0a2e36;
+      color: white;
+      padding: 5px 12px;
+      border-radius: 12px;
+      font-size: 14px;
+    }
+
+    .bubble-container {
+      position: relative;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .bubble {
+      position: absolute;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), rgba(0,150,200,0.7));
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      cursor: pointer;
+      animation: float 8s infinite ease-in-out;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      text-align: center;
+      user-select: none;
+	  z-index: 5;
+    }
+
+    @keyframes float {
+      0% { transform: translateY(0) }
+      50% { transform: translateY(-40px) }
+      100% { transform: translateY(0) }
+    }
+
+    .particle {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.8;
+      animation: explode 0.7s ease-out forwards;
+    }
+
+    @keyframes explode {
+      from { transform: scale(1); opacity: 1; }
+      to { transform: translate(var(--dx), var(--dy)) scale(0.5); opacity: 0; }
+    }
+
+    .card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      width: 85%;
+      max-width: 420px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+      opacity: 0;
+      transition: all 0.5s ease;
+      z-index: 10;
+	  pointer-events: none;
+    }
+
+    .card.active {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+	  pointer-events: auto;
+    }
+
+    .card img {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      display: none;
+    }
+
+    .close-btn {
+      float: right;
+      cursor: pointer;
+      font-weight: bold;
+      color: #666;
+    }
+
+    .card a {
+      display: inline-block;
+      margin-top: 10px;
+      text-decoration: none;
+      color: #0a2e36;
+      font-weight: bold;
+    }
+	.headerinfo {
+	  color: #0a2e36;
+	  font-weight: bold;
+	  font-size: 13px;
+	  margin: 5px 10px;
+	  padding: 6px 12px;
+	  background: linear-gradient(90deg, #a8edea, #fed6e3);
+	  border-radius: 12px;
+	  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+	  animation: pulse 2s infinite;
+	}
+	@keyframes pulse {
+	  0% { transform: scale(1); }
+	  50% { transform: scale(1.03); }
+	  100% { transform: scale(1); }
+}
+
+.popup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  animation: fadeIn 0.5s ease;
+}
+
+.popup-content {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  text-align: center;
+  font-size: 15px;
+  color: #0a2e36;
+  position: relative;
+  animation: slideUp 0.5s ease;
+}
+
+.close-popup {
+  position: absolute;
+  top: 10px; right: 15px;
+  cursor: pointer;
+  font-size: 18px;
+  color: #666;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+  </style>
+</head>
+<body>
+<div id="introPopup" class="popup">
+  <div class="popup-content">
+    <span class="close-popup" onclick="closeIntroPopup()">✖</span>
+    <h3>Welcome to Opposite Bubble!</h3>
+    <p>
+      Ever thought of getting too deep into your information bubble and not getting out?<br><br>
+      This app is just for you! Select 5 areas of interest and start bursting bubbles to get out of your box.<br><br>
+      The app will fetch you opposite areas of interest.<br><br>
+      <strong>Happy popping! 🎈</strong>
+    </p>
+  </div>
+</div>
+  <header>
+	<div class="headerinfo">Tap into curiosity!<br/>Pop 5 bubbles to begin your journey</div>
+    <div id="selectedBar"></div>
+    <div class="reset-btn" onclick="resetApp()">Reset</div>
+  </header>
+  <div class="bubble-container" id="bubbleContainer"></div>
+  <div class="card" id="card">
+    <span class="close-btn" onclick="closeCard()">✖</span>
+    <img id="cardImage">
+    <h2 id="cardTitle">Opposite Suggestion</h2>
+    <p id="cardText">Pop bubbles to discover something new!</p>
+    <a id="cardLink" href="#" target="_blank">Read on Wikipedia</a>
+  </div>
+
+  <script>
+    const topics = [
+      "Science","Technology","Art","History","Sports","Music","Philosophy","Travel",
+      "Mathematics","Food","Nature","Politics","Cinema","Psychology","Literature"
+    ];
+    const opposites = {
+      "Science": "Mythology","Technology": "Nature","Art": "Mathematics","History": "Future Studies",
+      "Sports": "Meditation","Music": "Silence","Philosophy": "DIY","Travel": "Home Gardening",
+      "Mathematics": "Poetry","Food": "Fasting","Nature": "Robotics","Politics": "Spirituality",
+      "Cinema": "Books","Psychology": "Astrology","Literature": "Video Games"
+    };
+
+    const creatures = ["🐸","🐙","🐝","🦋","🐧","🦊"];
+
+    let selected = JSON.parse(localStorage.getItem("selectedInterests")) || [];
+    let phase = 1;
+    const bubbleContainer = document.getElementById("bubbleContainer");
+    const selectedBar = document.getElementById("selectedBar");
+    const shownArticles = new Set();
+
+    function updateBar() {
+      selectedBar.innerHTML = "";
+      selected.forEach(s => {
+        const tag = document.createElement("div");
+        tag.className = "tag";
+        tag.textContent = s;
+        selectedBar.appendChild(tag);
+      });
+    }
+
+    function resetApp() {
+      localStorage.removeItem("selectedInterests");
+      selected = [];
+      phase = 1;
+      shownArticles.clear();
+      bubbleContainer.innerHTML = "";
+      updateBar();
+      startPhase1();
+    }
+
+    function createExplosion(x,y,color) {
+      for (let i=0;i<25;i++) {
+        const p = document.createElement("div");
+        p.className="particle";
+        p.style.width=p.style.height= (4+Math.random()*6)+"px";
+        p.style.background=color;
+        p.style.left=x+"px"; p.style.top=y+"px";
+        const dx=(Math.random()-0.5)*160+"px";
+        const dy=(Math.random()-0.5)*160+"px";
+        p.style.setProperty("--dx",dx);
+        p.style.setProperty("--dy",dy);
+        document.body.appendChild(p);
+        setTimeout(()=>p.remove(),700);
+      }
+    }
+
+    function spawnBubble(topic=null) {
+      const bubble=document.createElement("div");
+      bubble.className="bubble";
+      const size=60+Math.random()*80;
+      bubble.style.width=bubble.style.height=`${size}px`;
+      bubble.style.top=`${Math.random()*80}%`;
+      bubble.style.left=`${Math.random()*80}%`;
+      bubble.style.animationDuration=`${6+Math.random()*6}s`;
+
+      if(phase===1){
+        bubble.innerText=topic;
+        bubble.dataset.topic=topic;
+      }else{
+        if(Math.random()<0.2){
+          bubble.innerText=creatures[Math.floor(Math.random()*creatures.length)];
+          bubble.dataset.creature="true";
+        }else bubble.innerText="";
+      }
+
+      bubble.addEventListener("click",()=>popBubble(bubble));
+      bubbleContainer.appendChild(bubble);
+    }
+
+    function popBubble(bubble) {
+      const rect=bubble.getBoundingClientRect();
+      const x=rect.left+rect.width/2;
+      const y=rect.top+rect.height/2;
+      createExplosion(x,y,"rgba(0,150,200,0.8)");
+      bubble.remove();
+
+      if(phase===1){
+        const topic=bubble.dataset.topic;
+        if(topic && !selected.includes(topic)){
+          selected.push(topic);
+          localStorage.setItem("selectedInterests",JSON.stringify(selected));
+          updateBar();
+        }
+        if(selected.length>=5 && selected.length<=10){
+          Array.from(document.querySelectorAll(".bubble")).forEach(b=>{
+            b.style.opacity="0"; b.style.transform="scale(0.5)";
+          });
+          setTimeout(()=>{
+            phase=2;
+            bubbleContainer.innerHTML="";
+            startPhase2();
+          },600);
+        }
+      }else{
+        const isCreature=bubble.dataset.creature==="true";
+        showCard(isCreature);
+        setTimeout(()=>spawnBubble(),1000);
+      }
+    }
+	// Define suffixes globally so they're available to all functions
+	const suffixes = [
+	  "culture", "impact", "history", "future", "debate",
+	  "controversy", "evolution", "applications", "philosophy",
+	  "ethics", "trends", "tools", "methods", "perspectives"
+	];
+
+	const topicVariants = {
+	  "Science": ["Science", "Scientific method", "Physics", "Biology", "Experiments"],
+	  "Technology": ["Technology", "Innovation", "Computing", "AI", "Engineering"],
+	  "Art": ["Art", "Painting", "Sculpture", "Modern art", "Visual arts"],
+	  "History": ["History", "Ancient civilizations", "World War", "Historical figures"],
+	  "Sports": ["Sports", "Athletics", "Olympics", "Team games", "Physical fitness"],
+	  "Music": ["Music", "Genres of music", "Musicians", "Instruments", "Sound"],
+	  "Philosophy": ["Philosophy", "Ethics", "Logic", "Existentialism", "Thinkers"],
+	  "Travel": ["Travel", "Tourism", "Adventure", "Cultural exchange", "Destinations"],
+	  "Mathematics": ["Mathematics", "Algebra", "Geometry", "Calculus", "Numbers"],
+	  "Food": ["Food", "Cuisine", "Cooking", "Nutrition", "Culinary arts"],
+	  "Nature": ["Nature", "Wildlife", "Ecology", "Forests", "Natural wonders"],
+	  "Politics": ["Politics", "Governance", "Democracy", "Policy", "Political theory"],
+	  "Cinema": ["Cinema", "Film", "Directors", "Genres", "Movie history"],
+	  "Psychology": ["Psychology", "Mental health", "Behavior", "Cognition", "Therapy"],
+	  "Literature": ["Literature", "Novels", "Poetry", "Authors", "Storytelling"]
+	};
+
+	function getRandomQuery(topic) {
+	  const variants = topicVariants[topic] || [topic];
+	  const variant = variants[Math.floor(Math.random() * variants.length)];
+	  const suffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+	  return `${variant} ${suffix}`;
+	}
+
+	function shuffleArray(arr) {
+	  for (let i = arr.length - 1; i > 0; i--) {
+		const j = Math.floor(Math.random() * (i + 1));
+		[arr[i], arr[j]] = [arr[j], arr[i]];
+	  }
+	  return arr;
+	}
+
+	async function fetchWikiArticle(topic) {
+	  const queryTerm = getRandomQuery(topic);
+	  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(queryTerm)}&format=json&origin=*`;
+
+	  try {
+		const response = await fetch(searchUrl);
+		const data = await response.json();
+		const results = shuffleArray(data.query.search.filter(r => !shownArticles.has(r.pageid)));
+
+		if (results.length === 0) return null;
+
+		const article = results[0];
+		shownArticles.add(article.pageid);
+
+		const imageUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=400&pageids=${article.pageid}&origin=*`;
+		const imgRes = await fetch(imageUrl);
+		const imgData = await imgRes.json();
+		const page = imgData.query.pages[article.pageid];
+		const thumb = page?.thumbnail?.source || null;
+
+		return {
+		  title: article.title,
+		  snippet: article.snippet.replace(/<[^>]+>/g, ""),
+		  link: `https://en.wikipedia.org/?curid=${article.pageid}`,
+		  image: thumb
+		};
+	  } catch (error) {
+		console.error("Error fetching article:", error);
+		return null;
+	  }
+	}
+	
+    async function showCard(isCreature){
+      const card=document.getElementById("card");
+      const title=document.getElementById("cardTitle");
+      const text=document.getElementById("cardText");
+      const link=document.getElementById("cardLink");
+      const cardImage=document.getElementById("cardImage");
+
+      const interest=selected[Math.floor(Math.random()*selected.length)];
+      const topic=isCreature?interest:(opposites[interest]||"Random");
+      const article=await fetchWikiArticle(topic);
+
+      if(article){
+        title.innerText=article.title;
+        text.innerText=article.snippet;
+        link.href=article.link;
+        cardImage.style.display=article.image?"block":"none";
+        if(article.image) cardImage.src=article.image;
+      }else{
+        title.innerText="Nothing Found";
+        text.innerText="Try popping another bubble!";
+        link.href="#";
+        cardImage.style.display="none";
+      }
+
+      card.classList.add("active");
+    }
+
+    function closeCard(){
+      document.getElementById("card").classList.remove("active");
+    }
+
+    function startPhase1(){
+      topics.forEach(t=>spawnBubble(t));
+    }
+
+    function startPhase2(){
+      for(let i=0;i<15;i++) spawnBubble();
+    }
+
+    // Start app
+    updateBar();
+    if(selected.length>=5){
+      phase=2;
+      startPhase2();
+    }else{
+      startPhase1();
+    }
+	
+	function closeIntroPopup() {
+	  document.getElementById("introPopup").style.display = "none";
+	}
+
+	// Show popup on first visit
+	window.addEventListener("load", () => {
+	  const hasSeenIntro = localStorage.getItem("hasSeenIntro");
+	  if (!hasSeenIntro) {
+		document.getElementById("introPopup").style.display = "flex";
+		localStorage.setItem("hasSeenIntro", "true");
+	  }
+	});
+
+  </script>
+</body>
+</html>
