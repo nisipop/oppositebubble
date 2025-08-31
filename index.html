@@ -243,7 +243,19 @@
     let phase = 1;
     const bubbleContainer = document.getElementById("bubbleContainer");
     const selectedBar = document.getElementById("selectedBar");
-    const shownArticles = new Set();
+    const shownArticles = [];
+	const maxHistory = 30;
+
+	function isArticleNew(id) {
+	  return !shownArticles.includes(id);
+	}
+
+	function addToHistory(id) {
+	  shownArticles.push(id);
+	  if (shownArticles.length > maxHistory) {
+		shownArticles.shift(); // remove oldest
+	  }
+	}
 
     function updateBar() {
       selectedBar.innerHTML = "";
@@ -259,7 +271,7 @@
       localStorage.removeItem("selectedInterests");
       selected = [];
       phase = 1;
-      shownArticles.clear();
+      shownArticles.length = 0;
       bubbleContainer.innerHTML = "";
       updateBar();
       startPhase1();
@@ -280,6 +292,37 @@
         setTimeout(()=>p.remove(),700);
       }
     }
+	
+	const bubbleStyles = [
+	  { color: 'skyblue', speed: 15 },
+	  { color: '#AEEBEA', speed: 12 }
+	];
+	
+	function getRGB(colorName) {
+	  const temp = document.createElement("div");
+	  temp.style.color = colorName;
+	  document.body.appendChild(temp);
+
+	  const rgb = getComputedStyle(temp).color;
+	  document.body.removeChild(temp);
+
+	  const match = rgb.match(/\d+/g); // Extract all numbers
+	  return match ? `${match[0]}, ${match[1]}, ${match[2]}` : "0, 0, 0";
+	}
+	
+	function getRandomBubbleStyle() {
+	  const baseStyle = bubbleStyles[Math.floor(Math.random() * bubbleStyles.length)];
+	  const alpha = 0.1 + Math.random() * 0.5; // transparency: 0.4–0.9
+
+	  // Randomize speed within ±50% of base speed
+	  const variation = baseStyle.speed * 0.5;
+	  const randomizedSpeed = baseStyle.speed + (Math.random() * variation * 2 - variation);
+
+	  return {
+		color: `rgba(${getRGB(baseStyle.color)}, ${alpha.toFixed(2)})`,
+		speed: randomizedSpeed.toFixed(2)
+	  };
+	}
 
     function spawnBubble(topic=null) {
       const bubble=document.createElement("div");
@@ -299,7 +342,9 @@
           bubble.dataset.creature="true";
         }else bubble.innerText="";
       }
-
+	  const style = getRandomBubbleStyle();
+	  bubble.style.background = `radial-gradient(circle at 30% 30%, rgba(255,255,255,${Math.random().toFixed(2)}), ${style.color})`;
+	  bubble.style.animationDuration = `${style.speed + Math.random()}s`;
       bubble.addEventListener("click",()=>popBubble(bubble));
       bubbleContainer.appendChild(bubble);
     }
@@ -375,36 +420,55 @@
 	}
 
 	async function fetchWikiArticle(topic) {
-	  const queryTerm = getRandomQuery(topic);
-	  const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(queryTerm)}&format=json&origin=*`;
+	  const maxAttempts = 3;
+	  let attempt = 0;
+	  let article = null;
 
-	  try {
-		const response = await fetch(searchUrl);
-		const data = await response.json();
-		const results = shuffleArray(data.query.search.filter(r => !shownArticles.has(r.pageid)));
+	  while (attempt < maxAttempts && !article) {
+		const queryTerm = getRandomQuery(topic); // already randomized
+		const searchUrl = `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(queryTerm)}&format=json&origin=*`;
 
-		if (results.length === 0) return null;
+		try {
+		  const response = await fetch(searchUrl);
+		  const data = await response.json();
 
-		const article = results[0];
-		shownArticles.add(article.pageid);
+		  const filtered = shuffleArray(data.query.search.filter(r => isArticleNew(r.pageid)));
+		  if (filtered.length === 0) {
+			attempt++;
+			continue;
+		  }
 
-		const imageUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=400&pageids=${article.pageid}&origin=*`;
-		const imgRes = await fetch(imageUrl);
-		const imgData = await imgRes.json();
-		const page = imgData.query.pages[article.pageid];
-		const thumb = page?.thumbnail?.source || null;
+		  // Pick a random article from the filtered list
+		  article = filtered[Math.floor(Math.random() * filtered.length)];
+		  addToHistory(article.pageid);
 
-		return {
-		  title: article.title,
-		  snippet: article.snippet.replace(/<[^>]+>/g, ""),
-		  link: `https://en.wikipedia.org/?curid=${article.pageid}`,
-		  image: thumb
-		};
-	  } catch (error) {
-		console.error("Error fetching article:", error);
-		return null;
+		  const imageUrl = `https://en.wikipedia.org/w/api.php?action=query&prop=pageimages&format=json&pithumbsize=400&pageids=${article.pageid}&origin=*`;
+		  const imgRes = await fetch(imageUrl);
+		  const imgData = await imgRes.json();
+		  const page = imgData.query.pages[article.pageid];
+		  const thumb = page?.thumbnail?.source || null;
+
+		  return {
+			title: article.title,
+			snippet: decodeHTML(article.snippet.replace(/<[^>]+>/g, "")),
+			link: `https://en.wikipedia.org/?curid=${article.pageid}`,
+			image: thumb
+		  };
+		} catch (error) {
+		  console.error("Error fetching article:", error);
+		  return null;
+		}
 	  }
+
+	  return null;
 	}
+	
+	function decodeHTML(html) {
+	  const txt = document.createElement("textarea");
+	  txt.innerHTML = html;
+	  return txt.value;
+	}
+
 	
     async function showCard(isCreature){
       const card=document.getElementById("card");
