@@ -317,7 +317,7 @@
 	
 	function getRandomBubbleStyle() {
 	  const baseStyle = bubbleStyles[Math.floor(Math.random() * bubbleStyles.length)];
-	  const alpha = 0.1 + Math.random() * 0.1; // transparency: 0.4–0.9
+	  const alpha = 0.8 + Math.random() * 0.2; // transparency: 0.1 - 0.3
 
 	  // Randomize speed within ±50% of base speed
 	  const variation = baseStyle.speed * 0.5;
@@ -348,11 +348,12 @@
         }else bubble.innerText="";
       }
 	  const style = getRandomBubbleStyle();
-	  bubble.style.background = `radial-gradient(circle at 30% 30%, rgba(255,255,255,${Math.random().toFixed(2)}), ${style.color})`;
+	  bubble.style.background = `radial-gradient(circle at 30% 30%, rgba(255,255,255,0.8), ${style.color})`;
 	  bubble.style.animationDuration = `${style.speed + Math.random()}s`;
       bubble.addEventListener("click",()=>popBubble(bubble));
       bubbleContainer.appendChild(bubble);
     }
+
 
     function popBubble(bubble) {
       const rect=bubble.getBoundingClientRect();
